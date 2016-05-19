@@ -1,0 +1,85 @@
+#!/bin/bash
+#
+# Author: naildownx
+#
+# Date: 05-18-2016
+#
+#############################################################################
+# Description: Takes a list of names and converts them to a csv ready for 
+# import and upload to Google Classroom.
+#############################################################################
+#
+#    This program is free software: you can redistribute it and/or modify		
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#############################################################################
+
+if [[ $1 ]]
+    then
+        
+        printf "\nConverting %s to usernames. . .\n" "$1";
+
+        c=0;
+
+        while IFS='' read -r line || [[ -n ""$line"" ]]; 
+        
+        do
+            i=0; 
+            for token in $line; 
+                do
+                    i=$((i+1)); 
+                done; 
+
+            if [[ $i == 3 ]]
+
+                then 
+
+                    firstName="$(printf "$line" | awk '{print $1" "$2}' | awk '{ print tolower($0) }' | sed -e "s/\b\(.\)/\u\1/g")"
+
+                    lastName="$(printf "$line" | awk '{print $3}' | awk '{ print tolower($0) }' | sed -e "s/\b\(.\)/\u\1/g")"
+
+                    userName="$(printf "$line" | tr -d '.' | awk '{ print tolower($0) }' | awk '{print $1$2"."$3}')"
+
+                    checkName[$c]="$firstName $lastName";
+
+                    c=$((c+1));
+                
+                else
+
+                    firstName="$(printf "$line" | awk '{print $1}' | awk '{ print tolower($0) }' | sed -e "s/\b\(.\)/\u\1/g")"
+
+                    lastName="$(printf "$line" | awk '{print $2}' | awk '{ print tolower($0) }' | sed -e "s/\b\(.\)/\u\1/g")"
+
+                    userName="$(printf "$line" | tr -d '.' | awk '{ print tolower($0) }' | tr -d \' | awk '{print $(NF-1), $NF;}' | tr " " . )"
+
+            fi
+
+            printf "${firstName},${lastName},${userName}\n" >> final/newusers.csv; 
+
+        done < "$1"
+
+    printf "\nAll Done!\nCSV is located at final/users.csv!\n\n";
+
+    printf "The following names had more than two parts and may need checking...\n\n"
+
+    printf "%s\n" "${checkName[@]}" 
+
+    printf "\n" 
+
+	printf "$(sort final/newusers.csv >> sortedusers && uniq -D sortedusers >> uniqusers && awk '{print $0""++a[$0]}' < uniqusers > fixedusers && uniq sortedusers >> finalusers && cat fixedusers >> finalusers && sort finalusers >> final/users.csv && rm final/newusers.csv sortedusers uniqusers fixedusers finalusers)"
+
+else
+
+    printf "\nUsage: ./convertuser names.txt\n\n";
+
+fi
